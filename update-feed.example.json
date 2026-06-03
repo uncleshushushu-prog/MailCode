@@ -1,0 +1,6 @@
+{
+  "version": "1.0.1",
+  "build": 2,
+  "download_url": "https://example.com/MailCode.dmg",
+  "release_notes": "优化监听稳定性，并改进邮箱账号管理体验。"
+}

@@ -1,0 +1,22 @@
+.DS_Store
+
+# Xcode user data and build outputs
+.DerivedData/
+DerivedData/
+build/
+*.xcuserstate
+xcuserdata/
+*.xcuserdatad/
+
+# Distribution artifacts are uploaded as release assets.
+*.dmg
+*.zip
+*.app
+*.xcarchive
+*.dSYM
+
+# Local tool settings
+.claude/
+
+# Local repository backups
+.git-*-backup-*/

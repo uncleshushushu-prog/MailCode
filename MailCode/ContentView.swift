@@ -28,77 +28,84 @@ struct ContentView: View {
     @EnvironmentObject private var appModel: AppModel
     @AppStorage(AppPreferenceKeys.closesFloatingWindowAfterCopy) private var closesFloatingWindowAfterCopy = false
     @StateObject private var updateManager = UpdateManager()
+    @State private var isShowingBugFeedback = false
 
     var body: some View {
         ZStack {
             AppBackdrop()
 
-            VStack(alignment: .leading, spacing: 24) {
+            VStack(alignment: .leading, spacing: 0) {
                 WindowControlsReserve()
 
-                header
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 24) {
+                        header
 
-                ListeningStatusView(
-                    status: appModel.listeningStatus,
-                    latestCode: appModel.latestCode,
-                    pollingDiagnostics: appModel.pollingDiagnostics,
-                    canStartListening: appModel.savedAccounts.contains(where: \.isEnabled),
-                    isListening: appModel.isListening,
-                    onStartListening: {
-                        appModel.startListeningForVerificationCode()
-                    },
-                    onStopListening: {
-                        appModel.stopListening()
-                    }
-                )
+                        ListeningStatusView(
+                            status: appModel.listeningStatus,
+                            latestCode: appModel.latestCode,
+                            pollingDiagnostics: appModel.pollingDiagnostics,
+                            canStartListening: appModel.savedAccounts.contains(where: \.isEnabled),
+                            isListening: appModel.isListening,
+                            onStartListening: {
+                                appModel.startListeningForVerificationCode()
+                            },
+                            onStopListening: {
+                                appModel.stopListening()
+                            }
+                        )
 
-                Divider()
+                        Divider()
 
-                AccountSetupView(
-                    accountDraft: $appModel.accountDraft,
-                    savedAccounts: appModel.savedAccounts,
-                    listeningAccountIDs: appModel.listeningAccountIDs,
-                    isListening: appModel.isListening,
-                    onSave: {
-                        appModel.testAndSaveAccountDraft()
-                    },
-                    onSetEnabled: { accountID, isEnabled in
-                        appModel.setAccountEnabled(accountID: accountID, isEnabled: isEnabled)
-                    },
-                    onEdit: { accountID in
-                        appModel.prepareAccountDraftForEditing(accountID: accountID)
-                    },
-                    onTestConnection: { accountID in
-                        appModel.testSavedAccountConnection(accountID: accountID)
-                    },
-                    onDelete: { accountID in
-                        appModel.deleteAccount(accountID: accountID)
-                    }
-                )
+                        AccountSetupView(
+                            accountDraft: $appModel.accountDraft,
+                            savedAccounts: appModel.savedAccounts,
+                            listeningAccountIDs: appModel.listeningAccountIDs,
+                            isListening: appModel.isListening,
+                            onSave: {
+                                appModel.testAndSaveAccountDraft()
+                            },
+                            onSetEnabled: { accountID, isEnabled in
+                                appModel.setAccountEnabled(accountID: accountID, isEnabled: isEnabled)
+                            },
+                            onEdit: { accountID in
+                                appModel.prepareAccountDraftForEditing(accountID: accountID)
+                            },
+                            onTestConnection: { accountID in
+                                appModel.testSavedAccountConnection(accountID: accountID)
+                            },
+                            onDelete: { accountID in
+                                appModel.deleteAccount(accountID: accountID)
+                            }
+                        )
 
-                PreferencesView(
-                    canResetCheckpoint: appModel.savedAccounts.contains(where: \.isEnabled) && !appModel.isListening && !appModel.listeningStatus.isBusy,
-                    onResetCheckpoint: {
-                        appModel.resetCheckpointToCurrentMailbox()
-                    },
-                    closesFloatingWindowAfterCopy: $closesFloatingWindowAfterCopy
-                )
+                        PreferencesView(
+                            canResetCheckpoint: appModel.savedAccounts.contains(where: \.isEnabled) && !appModel.isListening && !appModel.listeningStatus.isBusy,
+                            onResetCheckpoint: {
+                                appModel.resetCheckpointToCurrentMailbox()
+                            },
+                            closesFloatingWindowAfterCopy: $closesFloatingWindowAfterCopy
+                        )
 
-                if !appModel.manualReviewEmails.isEmpty {
-                    ManualReviewEmailList(
-                        emails: appModel.manualReviewEmails,
-                        onCopy: copyManualReviewEmail,
-                        onDismiss: { id in
-                            appModel.dismissManualReviewEmail(id: id)
+                        if !appModel.manualReviewEmails.isEmpty {
+                            ManualReviewEmailList(
+                                emails: appModel.manualReviewEmails,
+                                onCopy: copyManualReviewEmail,
+                                onDismiss: { id in
+                                    appModel.dismissManualReviewEmail(id: id)
+                                }
+                            )
                         }
-                    )
-                }
 
-                Spacer(minLength: 0)
+                        Spacer(minLength: 0)
+                    }
+                    .padding(.horizontal, 28)
+                    .padding(.top, 10)
+                    .padding(.bottom, 28)
+                    .frame(maxWidth: .infinity, alignment: .topLeading)
+                }
+                .scrollBounceBehavior(.basedOnSize)
             }
-            .padding(.horizontal, 28)
-            .padding(.top, 10)
-            .padding(.bottom, 28)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
         .frame(minWidth: 600, minHeight: 520)
@@ -119,26 +126,62 @@ struct ContentView: View {
 
             Spacer()
 
-            VStack(alignment: .trailing, spacing: 4) {
+            HStack(alignment: .top, spacing: 8) {
                 Button {
-                    updateManager.checkForUpdates()
+                    isShowingBugFeedback = true
                 } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "arrow.triangle.2.circlepath")
-
-                        Text(updateManager.buttonTitle)
-                    }
-                    .font(.caption.weight(.medium))
+                    Label("Bug 反馈", systemImage: "qrcode")
+                        .font(.caption.weight(.medium))
                 }
                 .buttonStyle(.bordered)
-                .help("检查 MailCode 更新")
+                .help("打开飞书群二维码")
+                .popover(isPresented: $isShowingBugFeedback, arrowEdge: .top) {
+                    BugFeedbackQRCodeView()
+                }
 
-                Text(updateManager.currentVersionDisplay)
-                    .font(.caption2.weight(.medium))
-                    .foregroundStyle(.secondary)
+                VStack(alignment: .trailing, spacing: 4) {
+                    Button {
+                        updateManager.checkForUpdates()
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "arrow.triangle.2.circlepath")
+
+                            Text(updateManager.buttonTitle)
+                        }
+                        .font(.caption.weight(.medium))
+                    }
+                    .buttonStyle(.bordered)
+                    .help("检查 MailCode 更新")
+
+                    Text(updateManager.currentVersionDisplay)
+                        .font(.caption2.weight(.medium))
+                        .foregroundStyle(.secondary)
+                }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+private struct BugFeedbackQRCodeView: View {
+    var body: some View {
+        VStack(spacing: 12) {
+            Text("Bug 反馈")
+                .font(.headline)
+
+            Image("FeishuGroup")
+                .resizable()
+                .interpolation(.none)
+                .scaledToFit()
+                .frame(width: 220, height: 220)
+                .accessibilityLabel("飞书群二维码")
+
+            Text("扫码加入飞书群反馈问题")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .padding(18)
+        .frame(width: 260)
     }
 }
 

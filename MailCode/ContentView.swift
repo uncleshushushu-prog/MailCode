@@ -109,6 +109,19 @@ struct ContentView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
         .frame(minWidth: 600, minHeight: 520)
+        .task {
+            updateManager.runStartupUpdateCheck()
+        }
+        .alert(item: $updateManager.recoveryAlert) { alert in
+            Alert(
+                title: Text("自动更新失败"),
+                message: Text("MailCode 没能自动完成更新。你可以前往官网下载最新版本。\n\n\(alert.reason)"),
+                primaryButton: .default(Text("打开官网")) {
+                    updateManager.openDownloadWebsite()
+                },
+                secondaryButton: .cancel(Text("稍后"))
+            )
+        }
     }
 
     private var header: some View {
